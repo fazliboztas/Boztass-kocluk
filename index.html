@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boztaş Koçluk Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Grafik Kütüphanesi (Chart.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fffdf0',
+                            100: '#fffab3',
+                            500: '#ffde59',
+                            600: '#e6c43b',
+                            700: '#b3951d',
+                            hover: '#ebd048',
+                            darkText: '#4a3e00'
+                        },
+                        appBg: '#f8fafc',
+                        cardBg: '#ffffff'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body class="bg-appBg text-slate-700 min-h-screen">
+
+    <!-- 1. GİRİŞ EKRANI -->
+    <div id="loginScreen" class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-cardBg p-8 rounded-2xl border border-slate-100 w-full max-w-md shadow-xl space-y-6">
+            <div class="text-center space-y-2">
+                <div class="w-16 h-16 bg-brand-500 text-brand-darkText rounded-2xl flex items-center justify-center text-3xl font-black mx-auto shadow-lg shadow-brand-500/30">
+                    <i class="fas fa-user-md"></i>
+                </div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Boztaş Koçluk Paneli</h1>
+                <p class="text-xs font-semibold text-amber-700 bg-amber-50 py-1 px-3 rounded-full inline-block">Ankara Üniversitesi Tıp Fakültesi</p>
+            </div>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Kullanıcı Adı</label>
+                    <input type="text" id="usernameInput" placeholder="Kullanıcı adınız" required class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Şifre</label>
+                    <input type="password" id="passwordInput" placeholder="••••••••" required class="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <button type="submit" class="w-full py-3.5 bg-brand-500 text-brand-darkText font-black rounded-xl hover:bg-brand-hover transition shadow-md shadow-brand-500/20">Giriş Yap</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. ANA PANEL -->
+    <div id="appScreen" class="hidden min-h-screen p-4 md:p-6 space-y-6">
+        
+        <!-- TOPBAR -->
+        <header class="max-w-[1700px] mx-auto bg-cardBg rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-brand-500 text-brand-darkText flex items-center justify-center text-xl font-black shadow-sm">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black text-slate-800 tracking-tight">Boztaş Koçluk Paneli</h1>
+                    <div class="flex items-center gap-2 mt-0.5">
+                        <span id="coachMetaBadge" class="text-[11px] font-bold text-slate-600">Fazlı Boztaş | Ankara Üni. Tıp Fakültesi</span>
+                        <span id="userRoleBadge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button id="profileBtn" onclick="openProfileModal()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 shadow-sm transition">
+                    <i class="fas fa-user-circle mr-1"></i> Profilim
+                </button>
+                <button onclick="openAnalyticsModal()" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 shadow-sm transition">
+                    <i class="fas fa-chart-line mr-1"></i> Deneme Başarılarım
+                </button>
+                <button id="clearWeekBtn" onclick="clearCurrentWeek()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold text-xs rounded-xl shadow-sm transition hidden">
+                    <i class="fas fa-trash-alt mr-1"></i> Haftayı Temizle
+                </button>
+                <button onclick="logout()" class="px-3.5 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Çıkış
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <div class="max-w-[1700px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT PANEL: ÖĞRENCİLER -->
+            <aside id="studentSidebar" class="lg:col-span-2 bg-cardBg rounded-2xl p-4 border border-slate-100 shadow-sm space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-bold text-slate-800">Öğrenciler</h2>
+                    <button onclick="openAddStudentModal()" class="px-2.5 py-1 bg-brand-500 text-brand-darkText text-[11px] font-black rounded-lg hover:bg-brand-hover transition">
+                        + Ekle
+                    </button>
+                </div>
+
+                <input type="text" id="searchInput" oninput="renderStudentsList()" placeholder="Ara..." class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-brand-500">
+
+                <div id="studentList" class="space-y-1.5 pt-1"></div>
+            </aside>
+
+            <!-- CENTER MAIN: 7 GÜNLÜK GENİŞ TAKVİM -->
+            <main id="mainGridArea" class="lg:col-span-8 space-y-4">
+                
+                <!-- Aktif Öğrenci Header -->
+                <div class="bg-cardBg rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between">
+                    <div>
+                        <h2 id="activeStudentName" class="text-lg font-bold text-slate-800">...</h2>
+                        <p id="activeStudentMeta" class="text-xs text-slate-400">---</p>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs font-semibold">
+                        <span class="px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 font-bold" id="statCompleted">0 tamamlandı</span>
+                        <span class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200" id="statTotal">0 toplam</span>
+                    </div>
+                </div>
+
+                <!-- 7 Günlük Takvim Grid -->
+                <div id="daysGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3"></div>
+
+            </main>
+
+            <!-- RIGHT PANEL: PERFORMANS -->
+            <aside id="rightSidebar" class="lg:col-span-2 space-y-4">
+                <div class="bg-cardBg rounded-2xl p-4 border border-slate-100 shadow-sm space-y-3">
+                    <h3 class="text-sm font-bold text-slate-800">Haftalık Özet</h3>
+                    <div>
+                        <div class="flex justify-between text-[11px] text-slate-500 font-medium mb-1">
+                            <span>İlerleme</span>
+                            <span id="progressText" class="font-bold text-amber-600">%0</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div id="progressBar" class="h-full bg-brand-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 pt-2 text-xs border-t border-slate-100">
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Süre:</span>
+                            <span id="sideTotalTime" class="font-bold text-slate-800">0 sa 0 dk</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-400">Görev:</span>
+                            <span id="sideTotal" class="font-bold text-slate-700">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-cardBg rounded-2xl p-4 border border-slate-100 shadow-sm space-y-2">
+                    <h3 class="text-sm font-bold text-slate-800">Bekleyenler</h3>
+                    <div id="upcomingTasksList" class="space-y-1.5"></div>
+                </div>
+            </aside>
+
+        </div>
+    </div>
+
+    <!-- MODAL: PROFİL SIFIRLAMA / DÜZENLEME -->
+    <div id="profileModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-cardBg p-6 rounded-2xl border border-slate-100 max-w-md w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3 border-slate-100">
+                <h3 class="text-base font-extrabold text-slate-800">👤 Koç Profil Ayarları</h3>
+                <button onclick="closeModal('profileModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="space-y-3">
+                <div class="p-3 bg-amber-50 rounded-xl border border-amber-200">
+                    <p class="text-xs font-black text-amber-900">Fazlı Boztaş</p>
+                    <p class="text-[11px] text-amber-700">Ankara Üniversitesi Tıp Fakültesi</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Kullanıcı Adı</label>
+                    <input type="text" id="profUsername" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Yeni Şifre</label>
+                    <input type="password" id="profPassword" placeholder="••••••••" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand-500">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="closeModal('profileModal')" class="px-4 py-2 text-xs text-slate-400 font-bold">İptal</button>
+                <button onclick="saveProfile()" class="px-6 py-2 bg-brand-500 text-brand-darkText text-xs font-black rounded-xl hover:bg-brand-hover shadow-md">Bilgileri Güncelle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GÖREV EKLE / DÜZENLE -->
+    <div id="taskModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-cardBg p-6 rounded-2xl border border-slate-100 max-w-lg w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3 border-slate-100">
+                <h3 id="modalHeaderTitle" class="text-base font-extrabold text-slate-800">Ödev Tanımla</h3>
+                <button onclick="closeModal('taskModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <input type="hidden" id="modalTaskId">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">1. Gün Seç</label>
+                <select id="modalDay" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-brand-500">
+                    <option value="0">Pazartesi</option>
+                    <option value="1">Salı</option>
+                    <option value="2">Çarşamba</option>
+                    <option value="3">Perşembe</option>
+                    <option value="4">Cuma</option>
+                    <option value="5">Cumartesi</option>
+                    <option value="6">Pazar</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">2. Ders Seçin</label>
+                <div id="subjectButtons" class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1"></div>
+            </div>
+
+            <div id="typeSection">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">3. Ödev Tipi</label>
+                <div class="grid grid-cols-4 gap-2" id="typeButtons">
+                    <button type="button" onclick="selectType('Konu')" class="type-btn p-2 text-xs font-bold rounded-xl border border-slate-200 transition text-center" data-type="Konu">📘 Konu</button>
+                    <button type="button" onclick="selectType('Soru')" class="type-btn p-2 text-xs font-bold rounded-xl border border-slate-200 transition text-center" data-type="Soru">📝 Soru</button>
+                    <button type="button" onclick="selectType('Tekrar')" class="type-btn p-2 text-xs font-bold rounded-xl border border-slate-200 transition text-center" data-type="Tekrar">🔄 Tekrar</button>
+                    <button type="button" onclick="selectType('Deneme')" class="type-btn p-2 text-xs font-bold rounded-xl border border-slate-200 transition text-center" data-type="Deneme">🎯 Deneme</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+                <div class="col-span-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">4. Açıklama / Detay</label>
+                    <input type="text" id="modalDetail" placeholder="Örn: Yayın Adı / Test No" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Süre (Dk)</label>
+                    <input type="number" id="modalDuration" placeholder="45" value="45" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-brand-500">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="closeModal('taskModal')" class="px-4 py-2 text-xs text-slate-400 font-bold">İptal</button>
+                <button onclick="saveTask()" class="px-6 py-2 bg-brand-500 text-brand-darkText text-xs font-black rounded-xl hover:bg-brand-hover shadow-md">Ödevi Ver</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DENEME NET VE ANALİZ GİRİŞİ -->
+    <div id="examModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-cardBg p-6 rounded-2xl border border-slate-100 max-w-md w-full space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3 border-slate-100">
+                <h3 id="examModalTitle" class="text-base font-extrabold text-slate-800">Deneme Net Girişi</h3>
+                <button onclick="closeModal('examModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+
+            <input type="hidden" id="examTaskId">
+
+            <div id="examInputsArea" class="space-y-3"></div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Eksiklerim &amp; Notlarım</label>
+                <textarea id="examNotes" rows="3" placeholder="Sınavda dikkatini çeken eksikleri veya konu notlarını buraya yaz..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-brand-500"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="closeModal('examModal')" class="px-4 py-2 text-xs text-slate-400 font-bold">İptal</button>
+                <button onclick="saveExamResults()" class="px-6 py-2 bg-brand-500 text-brand-darkText text-xs font-black rounded-xl hover:bg-brand-hover">Netleri Kaydet &amp; Tamamla</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DENEME BAŞARILARI VE GRAFİK SAYFASI -->
+    <div id="analyticsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-cardBg p-6 rounded-2xl border border-slate-100 max-w-3xl w-full space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3 border-slate-100">
+                <div>
+                    <h3 class="text-base font-extrabold text-slate-800">📊 Deneme Başarılarım &amp; Net Grafiği</h3>
+                    <p class="text-xs text-slate-400" id="analyticsStudentSubtitle">Öğrenciye ait tüm deneme verileri</p>
+                </div>
+                <button onclick="closeModal('analyticsModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- ÖZET İSTATİSTİK KARTLARI -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-center">
+                    <span class="text-[10px] font-bold text-indigo-500 uppercase block">Toplam Deneme</span>
+                    <span id="statExamCount" class="text-lg font-black text-indigo-700">0</span>
+                </div>
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                    <span class="text-[10px] font-bold text-amber-700 uppercase block">Ortalama Net</span>
+                    <span id="statAvgNet" class="text-lg font-black text-amber-900">0.00</span>
+                </div>
+                <div class="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-center col-span-2 sm:col-span-1">
+                    <span class="text-[10px] font-bold text-emerald-600 uppercase block">En Yüksek Net</span>
+                    <span id="statMaxNet" class="text-lg font-black text-emerald-800">0.00</span>
+                </div>
+            </div>
+
+            <!-- ÇİZGİ GRAFİK ALANI -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+                <canvas id="examChart" height="110"></canvas>
+            </div>
+
+            <!-- DETAYLI DENEME GEÇMİŞİ VE NOTLAR TABLOSU -->
+            <div class="space-y-2">
+                <h4 class="text-xs font-bold text-slate-700 uppercase">Geçmiş Deneme Analizleri</h4>
+                <div class="overflow-x-auto border border-slate-100 rounded-xl">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                                <th class="p-2.5">Sınav Adı</th>
+                                <th class="p-2.5">Detay</th>
+                                <th class="p-2.5">Toplam Net</th>
+                                <th class="p-2.5">Eksikler &amp; Notlar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="examHistoryTableBody" class="divide-y divide-slate-100">
+                            <!-- JS ile Doldurulur -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GÖREVİ KOPYALA -->
+    <div id="copyModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-cardBg p-6 rounded-2xl border border-slate-100 max-w-sm w-full space-y-4 shadow-xl">
+            <h3 class="text-sm font-bold text-slate-800">Görevi Kopyala</h3>
+            <input type="hidden" id="copyTaskId">
+            <div>
+                <label class="text-xs font-semibold text-slate-500">Hedef Gün</label>
+                <select id="copyTargetDay" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold">
+                    <option value="0">Pazartesi</option>
+                    <option value="1">Salı</option>
+                    <option value="2">Çarşamba</option>
+                    <option value="3">Perşembe</option>
+                    <option value="4">Cuma</option>
+                    <option value="5">Cumartesi</option>
+                    <option value="6">Pazar</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeModal('copyModal')" class="px-4 py-2 text-xs text-slate-400">İptal</button>
+                <button onclick="executeCopyTask()" class="px-5 py-2 bg-brand-500 text-brand-darkText text-xs font-black rounded-xl">Kopyala</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: YENİ ÖĞRENCİ -->
+    <div id="addStudentModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-cardBg p-6 rounded-2xl border border-slate-100 max-w-sm w-full space-y-3 shadow-xl">
+            <h3 class="text-base font-bold text-slate-800">Yeni Öğrenci Ekle</h3>
+            <input type="text" id="newStudentName" placeholder="Ad Soyad" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <input type="text" id="newStudentClass" placeholder="Sınıf / Alan (Örn: 12-A SAY)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <input type="text" id="newStudentUsername" placeholder="Kullanıcı Adı (Örn: ali)" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <input type="password" id="newStudentPassword" placeholder="Şifre" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeModal('addStudentModal')" class="px-4 py-2 text-xs text-slate-400">İptal</button>
+                <button onclick="saveNewStudent()" class="px-5 py-2 bg-brand-500 text-brand-darkText text-xs font-black rounded-xl">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+        const SUBJECTS = [
+            '🎯 TYT GENEL DENEME', '🎯 AYT GENEL DENEME',
+            'TYT Türkçe', 'TYT Matematik', 'TYT Geometri', 'TYT Fizik', 'TYT Kimya', 'TYT Biyoloji', 'TYT Tarih', 'TYT Coğrafya', 'TYT Felsefe',
+            'AYT Matematik', 'AYT Fizik', 'AYT Kimya', 'AYT Biyoloji', 'AYT Edebiyat', 'AYT Tarih', 'AYT Coğrafya'
+        ];
+
+        let selectedSubject = '';
+        let selectedType = '';
+        let chartInstance = null;
+
+        // Varsayılan Koç Bilgileri
+        let coachCreds = JSON.parse(localStorage.getItem('boztas_coach_creds')) || { username: 'koc', password: '123' };
+
+        let state = {
+            currentUser: null,
+            activeStudentId: null,
+            students: JSON.parse(localStorage.getItem('yks_clean_students_v6')) || [],
+            tasks: JSON.parse(localStorage.getItem('yks_clean_tasks_v6')) || []
+        };
+
+        function saveData() {
+            localStorage.setItem('yks_clean_students_v6', JSON.stringify(state.students));
+            localStorage.setItem('yks_clean_tasks_v6', JSON.stringify(state.tasks));
+            localStorage.setItem('boztas_coach_creds', JSON.stringify(coachCreds));
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('usernameInput').value.trim().toLowerCase();
+            const p = document.getElementById('passwordInput').value.trim();
+
+            if (u === coachCreds.username.toLowerCase() && p === coachCreds.password) {
+                state.currentUser = { role: 'coach', name: 'Fazlı Boztaş' };
+                if (state.students.length > 0) state.activeStudentId = state.students[0].id;
+            } else {
+                const student = state.students.find(s => s.username === u && s.password === p);
+                if (student) {
+                    state.currentUser = { role: 'student', name: student.name, studentId: student.id };
+                    state.activeStudentId = student.id;
+                } else {
+                    return alert('Hatalı kullanıcı adı veya şifre!');
+                }
+            }
+            initApp();
+        }
+
+        function logout() {
+            state.currentUser = null;
+            document.getElementById('appScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('usernameInput').value = '';
+            document.getElementById('passwordInput').value = '';
+        }
+
+        function initApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appScreen').classList.remove('hidden');
+
+            const isCoach = state.currentUser.role === 'coach';
+            document.getElementById('userRoleBadge').innerText = isCoach ? 'KOÇ MODU' : 'ÖĞRENCİ MODU';
+
+            if (isCoach) {
+                document.getElementById('studentSidebar').classList.remove('hidden');
+                document.getElementById('clearWeekBtn').classList.remove('hidden');
+                document.getElementById('profileBtn').classList.remove('hidden');
+                document.getElementById('mainGridArea').classList.replace('lg:col-span-10', 'lg:col-span-8');
+            } else {
+                document.getElementById('studentSidebar').classList.add('hidden');
+                document.getElementById('clearWeekBtn').classList.add('hidden');
+                document.getElementById('profileBtn').classList.add('hidden');
+                document.getElementById('mainGridArea').classList.replace('lg:col-span-8', 'lg:col-span-10');
+            }
+
+            renderApp();
+        }
+
+        function formatDuration(minutes) {
+            if (!minutes || minutes <= 0) return '0 dk';
+            const hrs = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return hrs > 0 ? `${hrs} sa ${mins} dk` : `${mins} dk`;
+        }
+
+        function renderApp() {
+            renderStudentsList();
+            renderActiveStudentHeader();
+            renderDaysGrid();
+            renderSidebarStats();
+        }
+
+        function renderStudentsList() {
+            if (state.currentUser.role !== 'coach') return;
+
+            const listEl = document.getElementById('studentList');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = state.students.filter(s => s.name.toLowerCase().includes(search));
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-4">Öğrenci yok.</p>`;
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(s => {
+                const isActive = s.id === state.activeStudentId;
+                return `
+                    <div onclick="selectStudent(${s.id})" class="p-2.5 rounded-xl cursor-pointer transition flex justify-between items-center ${isActive ? 'bg-amber-100/80 border border-amber-300' : 'hover:bg-slate-50'}">
+                        <div>
+                            <p class="text-xs font-bold ${isActive ? 'text-slate-900' : 'text-slate-700'}">${s.name}</p>
+                            <p class="text-[10px] ${isActive ? 'text-amber-800 font-bold' : 'text-slate-400'}">${s.class}</p>
+                        </div>
+                        <button onclick="event.stopPropagation(); deleteStudent(${s.id})" class="text-slate-300 hover:text-red-500 text-xs px-1"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectStudent(id) {
+            state.activeStudentId = id;
+            renderApp();
+        }
+
+        function deleteStudent(id) {
+            if (confirm('Öğrenciyi silmek istiyor musunuz?')) {
+                state.students = state.students.filter(s => s.id !== id);
+                state.tasks = state.tasks.filter(t => t.studentId !== id);
+                if (state.activeStudentId === id) state.activeStudentId = state.students[0]?.id || null;
+                saveData();
+                renderApp();
+            }
+        }
+
+        function renderActiveStudentHeader() {
+            const student = state.students.find(s => s.id === state.activeStudentId);
+            if (!student) {
+                document.getElementById('activeStudentName').innerText = "Öğrenci Bulunmuyor";
+                document.getElementById('activeStudentMeta').innerText = "Lütfen öğrenci ekleyin.";
+                return;
+            }
+
+            document.getElementById('activeStudentName').innerText = student.name;
+            document.getElementById('activeStudentMeta').innerText = student.class;
+
+            const studentTasks = state.tasks.filter(t => t.studentId === state.activeStudentId);
+            const completed = studentTasks.filter(t => t.status === 'Yapıldı').length;
+
+            document.getElementById('statCompleted').innerText = `${completed} tamamlandı`;
+            document.getElementById('statTotal').innerText = `${studentTasks.length} toplam`;
+        }
+
+        function renderDaysGrid() {
+            const gridEl = document.getElementById('daysGrid');
+            if (!state.activeStudentId) {
+                gridEl.innerHTML = `<div class="col-span-7 text-center py-12 text-slate-400 text-sm italic">Program görüntülemek için öğrenci ekleyin.</div>`;
+                return;
+            }
+
+            const studentTasks = state.tasks.filter(t => t.studentId === state.activeStudentId);
+            const isCoach = state.currentUser.role === 'coach';
+
+            gridEl.innerHTML = DAYS.map((day, idx) => {
+                const dayTasks = studentTasks.filter(t => t.dayIdx === idx);
+                const dayTotalMinutes = dayTasks.reduce((acc, t) => acc + (parseInt(t.duration) || 0), 0);
+
+                return `
+                    <div class="bg-cardBg rounded-2xl p-3 border border-slate-100 shadow-sm min-h-[420px] flex flex-col justify-between">
+                        <div>
+                            <div class="text-center pb-2 border-b border-slate-100 mb-2.5">
+                                <span class="text-xs font-bold text-slate-800 block">${day}</span>
+                                <span class="text-[10px] text-amber-700 font-bold block mt-0.5">Toplam: ${formatDuration(dayTotalMinutes)}</span>
+                            </div>
+
+                            ${isCoach ? `
+                                <div class="space-y-1 mb-3">
+                                    <button onclick="openAddTaskModal(${idx})" class="w-full py-1.5 text-xs font-black text-amber-900 bg-amber-100/60 border border-dashed border-amber-300 rounded-xl hover:bg-amber-200/80 transition">
+                                        + Görev Ekle
+                                    </button>
+                                    <button onclick="clearDay(${idx})" class="w-full py-0.5 text-[10px] font-semibold text-red-400 hover:text-red-600 transition">
+                                        Günü Temizle
+                                    </button>
+                                </div>
+                            ` : ''}
+
+                            <div class="space-y-2">
+                                ${dayTasks.map(t => `
+                                    <div class="p-3 rounded-xl border ${t.status === 'Yapıldı' ? 'bg-amber-50/80 border-amber-200' : 'bg-slate-50/80 border-slate-100'} space-y-1.5 relative group shadow-sm">
+                                        <div class="flex items-start justify-between gap-1">
+                                            <p class="text-xs font-black text-slate-800 leading-tight">${t.title}</p>
+                                            
+                                            ${isCoach ? `
+                                                <div class="flex items-center gap-1.5">
+                                                    <button onclick="openCopyModal(${t.id})" title="Kopyala" class="text-[10px] text-slate-400 hover:text-amber-600"><i class="fas fa-copy"></i></button>
+                                                    <button onclick="editTask(${t.id})" title="Düzenle" class="text-[10px] text-slate-400 hover:text-blue-600"><i class="fas fa-pen"></i></button>
+                                                    <button onclick="deleteTask(${t.id})" title="Sil" class="text-[10px] text-slate-400 hover:text-red-600"><i class="fas fa-times"></i></button>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+
+                                        ${t.detail ? `<p class="text-[11px] text-slate-600 font-medium leading-snug">${t.detail}</p>` : ''}
+
+                                        ${t.status === 'Yapıldı' && t.examResult ? `
+                                            <div class="p-2 bg-white/90 rounded-lg border border-amber-200 text-[10px] space-y-0.5 font-medium">
+                                                <div class="text-amber-900 font-bold">🎯 Toplam Net: ${t.examResult.totalNet || 0}</div>
+                                                ${t.examResult.notes ? `<div class="text-slate-500 italic truncate">Not: ${t.examResult.notes}</div>` : ''}
+                                            </div>
+                                        ` : ''}
+
+                                        <div class="flex items-center justify-between pt-1 border-t border-slate-200/50">
+                                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">${t.duration || 0} dk</span>
+                                            <button onclick="handleTaskClick(${t.id})" class="text-[10px] font-bold px-2 py-0.5 rounded-md ${t.status === 'Yapıldı' ? 'bg-amber-300 text-amber-950 font-black' : 'bg-slate-200 text-slate-700'}">
+                                                ${t.status === 'Yapıldı' ? 'Yapıldı ✓' : 'Bekliyor'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderSidebarStats() {
+            if (!state.activeStudentId) return;
+
+            const studentTasks = state.tasks.filter(t => t.studentId === state.activeStudentId);
+            const completed = studentTasks.filter(t => t.status === 'Yapıldı').length;
+            const total = studentTasks.length;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+            const totalMinutes = studentTasks.reduce((acc, t) => acc + (parseInt(t.duration) || 0), 0);
+
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressText').innerText = '%' + pct;
+            document.getElementById('sideTotalTime').innerText = formatDuration(totalMinutes);
+            document.getElementById('sideTotal').innerText = total;
+
+            const upcomingEl = document.getElementById('upcomingTasksList');
+            const pendingTasks = studentTasks.filter(t => t.status === 'Beklemede');
+
+            upcomingEl.innerHTML = pendingTasks.length > 0 ? pendingTasks.map(t => `
+                <div class="p-2 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-bold text-slate-700">${t.title}</p>
+                        <p class="text-[10px] text-slate-400">${DAYS[t.dayIdx]} · ${t.duration || 0} dk</p>
+                    </div>
+                </div>
+            `).join('') : '<p class="text-xs text-slate-400 italic">Bekleyen yok.</p>';
+        }
+
+        function handleTaskClick(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (!task) return;
+
+            if (task.status === 'Beklemede' && isExamTask(task.title)) {
+                openExamModal(task);
+            } else {
+                toggleTaskStatus(id);
+            }
+        }
+
+        function isExamTask(title) {
+            return title.includes('GENEL DENEME') || title.includes('Deneme');
+        }
+
+        function toggleTaskStatus(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (task) {
+                task.status = task.status === 'Yapıldı' ? 'Beklemede' : 'Yapıldı';
+                if (task.status === 'Yapıldı') confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
+                saveData();
+                renderApp();
+            }
+        }
+
+        // KOÇ PROFİL MODAL
+        function openProfileModal() {
+            document.getElementById('profUsername').value = coachCreds.username;
+            document.getElementById('profPassword').value = coachCreds.password;
+            document.getElementById('profileModal').classList.replace('hidden', 'flex');
+        }
+
+        function saveProfile() {
+            const newU = document.getElementById('profUsername').value.trim();
+            const newP = document.getElementById('profPassword').value.trim();
+
+            if (!newU || !newP) return alert('Kullanıcı adı ve şifre boş bırakılamaz!');
+
+            coachCreds.username = newU;
+            coachCreds.password = newP;
+
+            saveData();
+            alert('Profil bilgileriniz güncellendi!');
+            closeModal('profileModal');
+        }
+
+        // DENEME MODAL VE ANALİZ İŞLEMLERİ
+        function openExamModal(task) {
+            document.getElementById('examTaskId').value = task.id;
+            document.getElementById('examNotes').value = task.examResult?.notes || '';
+
+            const area = document.getElementById('examInputsArea');
+            const titleEl = document.getElementById('examModalTitle');
+
+            if (task.title.includes('TYT GENEL DENEME')) {
+                titleEl.innerText = '🎯 TYT Genel Deneme Sonuç Girişi';
+                area.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label class="font-bold text-slate-600">Türkçe Net</label>
+                            <input type="number" step="0.25" id="net_turkce" class="w-full p-2 bg-slate-50 border rounded-lg net-input" oninput="calcTotalNet()">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-600">Sosyal Net</label>
+                            <input type="number" step="0.25" id="net_sosyal" class="w-full p-2 bg-slate-50 border rounded-lg net-input" oninput="calcTotalNet()">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-600">Matematik Net</label>
+                            <input type="number" step="0.25" id="net_mat" class="w-full p-2 bg-slate-50 border rounded-lg net-input" oninput="calcTotalNet()">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-600">Fen Net</label>
+                            <input type="number" step="0.25" id="net_fen" class="w-full p-2 bg-slate-50 border rounded-lg net-input" oninput="calcTotalNet()">
+                        </div>
+                    </div>
+                    <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-center font-bold text-amber-900 text-sm">
+                        Hesaplanan Toplam Net: <span id="totalNetDisplay">0.00</span>
+                    </div>
+                `;
+            } else if (task.title.includes('AYT GENEL DENEME')) {
+                titleEl.innerText = '🎯 AYT Genel Deneme Sonuç Girişi';
+                area.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label class="font-bold text-slate-600">Matematik Net</label>
+                            <input type="number" step="0.25" id="net_mat" class="w-full p-2 bg-slate-50 border rounded-lg net-input" oninput="calcTotalNet()">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-600">Fizik Net</label>
+                            <input type="number" step="0.25" id="net_fizik" class="w-full p-2 bg-slate-50 border rounded-lg net-input" oninput="calcTotalNet()">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-600">Kimya Net</label>
+                            <input type="number" step="0.25" id="net_kimya" class="w-full p-2 bg-slate-50 border rounded-lg net-input" oninput="calcTotalNet()">
+                        </div>
+                        <div>
+                            <label class="font-bold text-slate-600">Biyoloji Net</label>
+                            <input type="number" step="0.25" id="net_biyo" class="w-full p-2 bg-slate-50 border rounded-lg net-input" oninput="calcTotalNet()">
+                        </div>
+                    </div>
+                    <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-center font-bold text-amber-900 text-sm">
+                        Hesaplanan Toplam Net: <span id="totalNetDisplay">0.00</span>
+                    </div>
+                `;
+            } else {
+                titleEl.innerText = `📝 ${task.title} (Branş Denemesi)`;
+                area.innerHTML = `
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Branş Denemesi Netiniz</label>
+                        <input type="number" step="0.25" id="net_single" placeholder="Örn: 32.5" class="w-full p-2.5 bg-slate-50 border rounded-xl text-xs font-bold focus:outline-none focus:border-brand-500">
+                    </div>
+                `;
+            }
+
+            document.getElementById('examModal').classList.replace('hidden', 'flex');
+        }
+
+        function calcTotalNet() {
+            const inputs = document.querySelectorAll('.net-input');
+            let sum = 0;
+            inputs.forEach(inp => sum += parseFloat(inp.value) || 0);
+            const disp = document.getElementById('totalNetDisplay');
+            if (disp) disp.innerText = sum.toFixed(2);
+        }
+
+        function saveExamResults() {
+            const taskId = parseInt(document.getElementById('examTaskId').value);
+            const task = state.tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            let totalNet = 0;
+            const singleInput = document.getElementById('net_single');
+
+            if (singleInput) {
+                totalNet = parseFloat(singleInput.value) || 0;
+            } else {
+                const disp = document.getElementById('totalNetDisplay');
+                totalNet = parseFloat(disp ? disp.innerText : 0) || 0;
+            }
+
+            task.examResult = {
+                totalNet: totalNet,
+                notes: document.getElementById('examNotes').value.trim(),
+                date: new Date().toLocaleDateString('tr-TR')
+            };
+
+            task.status = 'Yapıldı';
+            confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+
+            saveData();
+            closeModal('examModal');
+            renderApp();
+        }
+
+        // DENEME BAŞARILARI GRAFİK VE DETAY SAYFASI
+        function openAnalyticsModal() {
+            if (!state.activeStudentId) return alert('Lütfen bir öğrenci seçin.');
+
+            const student = state.students.find(s => s.id === state.activeStudentId);
+            document.getElementById('analyticsStudentSubtitle').innerText = `${student?.name || ''} - Sınav Gelişim Analizi`;
+
+            const studentTasks = state.tasks.filter(t => t.studentId === state.activeStudentId && t.status === 'Yapıldı' && t.examResult);
+
+            document.getElementById('statExamCount').innerText = studentTasks.length;
+
+            const totalNets = studentTasks.map(t => t.examResult.totalNet || 0);
+            const avgNet = totalNets.length > 0 ? (totalNets.reduce((a, b) => a + b, 0) / totalNets.length).toFixed(2) : '0.00';
+            const maxNet = totalNets.length > 0 ? Math.max(...totalNets).toFixed(2) : '0.00';
+
+            document.getElementById('statAvgNet').innerText = avgNet;
+            document.getElementById('statMaxNet').innerText = maxNet;
+
+            // Tabloyu doldur
+            const tbody = document.getElementById('examHistoryTableBody');
+            if (studentTasks.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">Henüz tamamlanmış bir deneme bulunmuyor.</td></tr>`;
+            } else {
+                tbody.innerHTML = studentTasks.map(t => `
+                    <tr class="hover:bg-slate-50/80">
+                        <td class="p-2.5 font-bold text-slate-800">${t.title}</td>
+                        <td class="p-2.5 text-slate-500">${t.detail || '-'}</td>
+                        <td class="p-2.5 font-bold text-amber-800">${t.examResult.totalNet} Net</td>
+                        <td class="p-2.5 text-slate-600 italic">${t.examResult.notes || '-'}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Grafiği Oluştur
+            renderExamChart(studentTasks);
+
+            document.getElementById('analyticsModal').classList.replace('hidden', 'flex');
+        }
+
+        function renderExamChart(examTasks) {
+            const ctx = document.getElementById('examChart').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const labels = examTasks.map((t, idx) => `${idx + 1}. Deneme (${t.title.split(' - ')[0]})`);
+            const dataNets = examTasks.map(t => t.examResult.totalNet || 0);
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Net Gelişimi',
+                        data: dataNets,
+                        borderColor: '#ffde59',
+                        backgroundColor: 'rgba(255, 222, 89, 0.25)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#b3951d',
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function openAddTaskModal(dayIdx = 0) {
+            document.getElementById('modalTaskId').value = '';
+            document.getElementById('modalHeaderTitle').innerText = 'Yeni Ödev Tanımla';
+            document.getElementById('modalDay').value = dayIdx;
+            document.getElementById('modalDetail').value = '';
+            document.getElementById('modalDuration').value = '45';
+
+            selectedSubject = '';
+            selectedType = '';
+
+            renderSubjectButtons();
+            resetTypeButtons();
+
+            document.getElementById('taskModal').classList.replace('hidden', 'flex');
+        }
+
+        function renderSubjectButtons() {
+            const container = document.getElementById('subjectButtons');
+            container.innerHTML = SUBJECTS.map(s => {
+                const isGeneral = s.includes('GENEL DENEME');
+                return `
+                    <button type="button" onclick="selectSubject('${s}')" class="subject-btn px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200 hover:border-brand-500 transition ${selectedSubject === s ? 'bg-brand-500 text-brand-darkText border-brand-500' : (isGeneral ? 'bg-amber-100 text-amber-900 border-amber-300 font-extrabold' : 'bg-slate-50 text-slate-700')}" data-subject="${s}">
+                        ${s}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function selectSubject(s) {
+            selectedSubject = s;
+            const typeSec = document.getElementById('typeSection');
+
+            if (s.includes('GENEL DENEME')) {
+                selectedType = 'Deneme';
+                typeSec.classList.add('hidden');
+            } else {
+                typeSec.classList.remove('hidden');
+            }
+
+            renderSubjectButtons();
+        }
+
+        function selectType(t) {
+            selectedType = t;
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                if (btn.dataset.type === t) {
+                    btn.className = 'type-btn p-2 text-xs font-black rounded-xl bg-brand-500 text-brand-darkText border border-brand-500 shadow-sm text-center';
+                } else {
+                    btn.className = 'type-btn p-2 text-xs font-bold rounded-xl border border-slate-200 hover:border-brand-500 transition text-center bg-white text-slate-700';
+                }
+            });
+        }
+
+        function resetTypeButtons() {
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.className = 'type-btn p-2 text-xs font-bold rounded-xl border border-slate-200 hover:border-brand-500 transition text-center bg-white text-slate-700';
+            });
+        }
+
+        function editTask(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (!task) return;
+
+            document.getElementById('modalTaskId').value = task.id;
+            document.getElementById('modalHeaderTitle').innerText = 'Görevi Düzenle';
+            document.getElementById('modalDay').value = task.dayIdx;
+            document.getElementById('modalDetail').value = task.detail || '';
+            document.getElementById('modalDuration').value = task.duration || 30;
+
+            const parts = task.title.split(' - ');
+            selectedSubject = parts[0] || '';
+            selectedType = parts[1] || '';
+
+            renderSubjectButtons();
+            if (selectedType) selectType(selectedType);
+
+            document.getElementById('taskModal').classList.replace('hidden', 'flex');
+        }
+
+        function saveTask() {
+            if (!selectedSubject) return alert('Lütfen bir ders seçin!');
+            if (!selectedType && !selectedSubject.includes('GENEL DENEME')) return alert('Lütfen ödev tipini seçin!');
+
+            const fullTitle = selectedSubject.includes('GENEL DENEME') ? selectedSubject : `${selectedSubject} - ${selectedType}`;
+            const taskId = document.getElementById('modalTaskId').value;
+            const dayIdx = parseInt(document.getElementById('modalDay').value);
+            const detail = document.getElementById('modalDetail').value.trim();
+            const duration = parseInt(document.getElementById('modalDuration').value) || 0;
+
+            if (taskId) {
+                const task = state.tasks.find(t => t.id === parseInt(taskId));
+                if (task) {
+                    task.dayIdx = dayIdx;
+                    task.title = fullTitle;
+                    task.detail = detail;
+                    task.duration = duration;
+                }
+            } else {
+                state.tasks.push({
+                    id: Date.now(),
+                    studentId: state.activeStudentId,
+                    dayIdx: dayIdx,
+                    title: fullTitle,
+                    detail: detail,
+                    duration: duration,
+                    status: 'Beklemede'
+                });
+            }
+
+            saveData();
+            closeModal('taskModal');
+            renderApp();
+        }
+
+        function openCopyModal(taskId) {
+            document.getElementById('copyTaskId').value = taskId;
+            document.getElementById('copyModal').classList.replace('hidden', 'flex');
+        }
+
+        function executeCopyTask() {
+            const taskId = parseInt(document.getElementById('copyTaskId').value);
+            const targetDay = parseInt(document.getElementById('copyTargetDay').value);
+
+            const originalTask = state.tasks.find(t => t.id === taskId);
+            if (originalTask) {
+                state.tasks.push({ ...originalTask, id: Date.now(), dayIdx: targetDay, status: 'Beklemede' });
+                saveData();
+                renderApp();
+            }
+            closeModal('copyModal');
+        }
+
+        function deleteTask(id) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            saveData();
+            renderApp();
+        }
+
+        function clearDay(dayIdx) {
+            if (confirm(`${DAYS[dayIdx]} gününün tüm görevlerini silmek istediğinize emin misiniz?`)) {
+                state.tasks = state.tasks.filter(t => !(t.studentId === state.activeStudentId && t.dayIdx === dayIdx));
+                saveData();
+                renderApp();
+            }
+        }
+
+        function clearCurrentWeek() {
+            if (confirm('Seçili öğrencinin bu haftaki BÜTÜN görevlerini silmek istiyor musunuz?')) {
+                state.tasks = state.tasks.filter(t => t.studentId !== state.activeStudentId);
+                saveData();
+                renderApp();
+            }
+        }
+
+        function openAddStudentModal() {
+            document.getElementById('addStudentModal').classList.replace('hidden', 'flex');
+        }
+
+        function saveNewStudent() {
+            const name = document.getElementById('newStudentName').value.trim();
+            const cls = document.getElementById('newStudentClass').value.trim() || '12-A SAY';
+            const username = document.getElementById('newStudentUsername').value.trim().toLowerCase();
+            const password = document.getElementById('newStudentPassword').value.trim();
+
+            if (!name || !username || !password) return alert('Lütfen bilgileri eksiksiz girin.');
+
+            const newId = Date.now();
+            state.students.push({ id: newId, name, class: cls, username, password });
+            state.activeStudentId = newId;
+
+            saveData();
+            closeModal('addStudentModal');
+            document.getElementById('newStudentName').value = '';
+            document.getElementById('newStudentClass').value = '';
+            document.getElementById('newStudentUsername').value = '';
+            document.getElementById('newStudentPassword').value = '';
+            renderApp();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.replace('flex', 'hidden');
+        }
+    </script>
+</body>
+</html>
